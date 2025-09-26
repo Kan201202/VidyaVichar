@@ -4,9 +4,7 @@ import Toolbar from "../components/Toolbar.jsx";
 import QuestionCard from "../components/QuestionCard.jsx";
 import * as qApi from "../api/questions.js";
 
-/**
- * Instructor tools: mark answered/important, filter, clear. :contentReference[oaicite:2]{index=2}
- */
+
 export default function InstructorDashboard() {
   const { token } = useAuth();
   const [items,setItems]=useState([]);
