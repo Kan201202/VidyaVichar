@@ -1,119 +1,45 @@
-import { useEffect, useMemo, useState } from "react";
-import Toolbar from "../components/Toolbar.jsx";
-import QuestionCard from "../components/QuestionCard.jsx";
-import * as qApi from "../api/questions.js";
-import { listClasses, startClass, endClass, getActiveClass } from "../api/classes.js";
+import { useMemo, useState } from "react";
 
 export default function InstructorDashboard() {
-  const [activeClass, setActiveClass] = useState(null);
   const [classes, setClasses] = useState([]);
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
-  const [sort, setSort] = useState("newest");
-  const [query, setQuery] = useState("");
+  const [questions, setQuestions] = useState([
+    { id: 1, text: "What is React?", status: "unanswered" },
+    { id: 2, text: "Explain deadlock", status: "answered" },
+  ]);
 
-  const refresh = async () => {
-    const cls = await getActiveClass();
-    setActiveClass(cls);
-    setClasses(await listClasses());
-    if (cls) setItems(await qApi.list({ classId: cls.id }));
-    else setItems([]);
+  const activeClass = useMemo(
+    () => classes.find((c) => c.status === "active") || null,
+    [classes]
+  );
+
+  const startNewClass = () => {
+    if (activeClass) return;
+    const newClass = { id: Date.now(), name: `Class ${classes.length + 1}`, status: "active" };
+    setClasses([...classes, newClass]);
+    setQuestions([]);
   };
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      await refresh();
-      setLoading(false);
-    })();
-  }, []);
-
-  const filtered = useMemo(() => {
-    let list = items;
-    if (filter !== "all") {
-      list = list.filter(i =>
-        filter === "unanswered"
-          ? (i.status ?? "unanswered") === "unanswered"
-          : i.status === filter
-      );
-    }
-    if (query) list = list.filter(i => i.text.toLowerCase().includes(query.toLowerCase()));
-    if (sort === "newest") list = [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    if (sort === "oldest") list = [...list].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    if (sort === "pinned") list = [...list].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
-    return list;
-  }, [items, filter, sort, query]);
-
-  const toggleStatus = async (q, status) => {
-    const next = q.status === status ? "unanswered" : status;
-    const prev = items;
-    setItems(prev => prev.map(i => (i._id === q._id ? { ...i, status: next } : i)));
-    try {
-      await qApi.update(q._id, { status: next });
-    } catch (e) {
-      setItems(prev);
-      alert("Failed: " + e.message);
-    }
-  };
-
-  const togglePin = async q => {
-    const next = !q.pinned;
-    const prev = items;
-    setItems(prev => prev.map(i => (i._id === q._id ? { ...i, pinned: next } : i)));
-    try {
-      await qApi.update(q._id, { pinned: next });
-    } catch (e) {
-      setItems(prev);
-      alert("Failed: " + e.message);
-    }
-  };
-
-  const del = async q => {
-    const prev = items;
-    setItems(prev => prev.filter(i => i._id !== q._id));
-    try {
-      await qApi.remove(q._id);
-    } catch (e) {
-      setItems(prev);
-      alert("Failed: " + e.message);
-    }
-  };
-
-  const clearAnswered = async () => {
+  const endActiveClass = () => {
     if (!activeClass) return;
-    if (!confirm("Clear all answered questions in this class?")) return;
-    await qApi.clear("answered", null, activeClass.id); // pass null if your function expects a token param
-    await refresh();
+    setClasses(classes.map(c => c.id === activeClass.id ? { ...c, status: "ended" } : c));
   };
 
-  const clearAll = async () => {
-    if (!activeClass) return;
-    if (!confirm("Clear ALL questions in this class?")) return;
-    await qApi.clear("all", null, activeClass.id); // pass null if your function expects a token param
-    await refresh();
+  const clearAll = () => {
+    setQuestions([]);
   };
 
-  const handleStart = async () => {
-    const name = prompt("Class name?", `Lecture ${new Date().toLocaleString()}`);
-    if (!name) return;
-    const cls = await startClass({ name });
-    setActiveClass(cls);
-    setItems([]);
-    setClasses(await listClasses());
+  const clearAnswered = () => {
+    setQuestions(questions.filter(q => q.status !== "answered"));
   };
 
-  const handleEnd = async () => {
-    if (!activeClass) return;
-    await endClass(activeClass.id);
-    setActiveClass(null);
-    setItems([]);
-    setClasses(await listClasses());
+  const toggleStatus = (id) => {
+    setQuestions(questions.map(q =>
+      q.id === id ? { ...q, status: q.status === "answered" ? "unanswered" : "answered" } : q
+    ));
   };
 
   return (
-    <div className="space-y-4">
-      {/* Class controls */}
+    <div className="space-y-4 p-6">
       <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-white p-3">
         <div className="flex-1">
           <div className="font-medium">Current Class:</div>
@@ -125,65 +51,74 @@ export default function InstructorDashboard() {
             <div className="text-gray-600">No active class</div>
           )}
         </div>
+
         {!activeClass ? (
-          <button onClick={handleStart} className="rounded bg-green-600 px-4 py-2 text-white">
+          <button
+            onClick={startNewClass}
+            className="rounded bg-green-600 px-4 py-2 text-white"
+          >
             Start New Class
           </button>
         ) : (
-          <button onClick={handleEnd} className="rounded bg-red-600 px-4 py-2 text-white">
+          <button
+            onClick={endActiveClass}
+            className="rounded bg-red-600 px-4 py-2 text-white"
+          >
             End Class
           </button>
         )}
       </div>
 
-      {/* Board for active class */}
-      <Toolbar
-        filter={filter}
-        setFilter={setFilter}
-        sort={sort}
-        setSort={setSort}
-        query={query}
-        setQuery={setQuery}
-        onClearAnswered={clearAnswered}
-        onClearAll={clearAll}
-        showDanger
-      />
-
-      {loading ? (
-        <div>Loading…</div>
-      ) : !activeClass ? (
-        <div className="text-gray-600">Start a class to see questions here.</div>
-      ) : filtered.length === 0 ? (
-        <div className="text-gray-600">No questions yet.</div>
-      ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-          {filtered.map(q => (
-            <QuestionCard
-              key={q._id}
-              q={q}
-              canModerate
-              onToggleStatus={toggleStatus}
-              onPin={togglePin}
-              onDelete={del}
-            />
-          ))}
+      <div className="rounded-lg border bg-white p-3">
+        <div className="mb-2 font-medium">Questions</div>
+        <div className="flex gap-2 mb-3">
+          <button
+            onClick={clearAnswered}
+            className="rounded bg-yellow-600 px-3 py-1 text-white"
+          >
+            Clear Answered
+          </button>
+          <button
+            onClick={clearAll}
+            className="rounded bg-red-600 px-3 py-1 text-white"
+          >
+            Clear All
+          </button>
         </div>
-      )}
+        {questions.length === 0 ? (
+          <div className="text-gray-600">No questions available</div>
+        ) : (
+          <ul className="space-y-2">
+            {questions.map((q) => (
+              <li
+                key={q.id}
+                className="flex items-center justify-between border rounded p-2"
+              >
+                <span>
+                  {q.text}{" "}
+                  <span className="text-sm text-gray-600">({q.status})</span>
+                </span>
+                <button
+                  onClick={() => toggleStatus(q.id)}
+                  className="rounded bg-blue-600 px-2 py-1 text-white"
+                >
+                  Toggle
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
-      {/* Past classes list */}
       <div className="rounded-lg border bg-white p-3">
         <div className="mb-2 font-medium">Past Classes</div>
         {classes.filter(c => c.status === "ended").length === 0 ? (
           <div className="text-gray-600">No past classes yet.</div>
         ) : (
-          <ul className="list-disc space-y-1 pl-5">
-            {classes
-              .filter(c => c.status === "ended")
-              .map(c => (
-                <li key={c.id}>
-                  {c.name} · ended {new Date(c.endedAt).toLocaleString()}
-                </li>
-              ))}
+          <ul className="list-disc pl-5 space-y-1">
+            {classes.filter(c => c.status === "ended").map((c) => (
+              <li key={c.id}>{c.name} · ended</li>
+            ))}
           </ul>
         )}
       </div>

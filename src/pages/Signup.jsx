@@ -14,7 +14,7 @@ export default function Signup() {
     setError("");
     setBusy(true);
 
-    // Dummy success flow
+    
     if (email && password) {
       setTimeout(() => {
         setBusy(false);

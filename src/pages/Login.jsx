@@ -14,11 +14,11 @@ export default function Login() {
     setError("");
     setBusy(true);
 
-    // Dummy check: accept any email/password
+    
     if (email && password) {
       setTimeout(() => {
         setBusy(false);
-        navigate("/dashboard"); // default redirect
+        navigate("/dashboard"); 
       }, 500);
     } else {
       setBusy(false);
