@@ -16,7 +16,7 @@ export default function InstructorDashboard() {
 
   // Load questions for this course
   const load = async () => {
-    const data = await qApi.list(courseId, token); //  pass courseId
+    const data = await qApi.list({courseId}, token); //  pass courseId
     setItems(data ?? []);
   };
 

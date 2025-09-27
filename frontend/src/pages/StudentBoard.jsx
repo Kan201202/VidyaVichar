@@ -1,25 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom"; //  import useParams
+import { useParams } from "react-router-dom";
+import { useAuth } from "../context/AuthProvider.jsx"; // ← Make sure this import exists
 import QuestionComposer from "../components/QuestionComposer.jsx";
 import QuestionCard from "../components/QuestionCard.jsx";
 import Toolbar from "../components/Toolbar.jsx";
 import * as qApi from "../api/questions.js";
 
 export default function StudentBoard() {
-  const { courseId } = useParams(); //  get course from route
+  const { courseId } = useParams();
+  const { token } = useAuth(); // ← Get the token from auth context
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState("newest");
   const [query, setQuery] = useState("");
 
-  // Load questions for this course
+  // Load questions for this course - PASS THE TOKEN
   useEffect(() => {
     let ignore = false;
     (async () => {
       try {
         setLoading(true);
-        const data = await qApi.list(courseId); //  course-specific list
+        const data = await qApi.list({ courseId }, token); // ← Pass token here
         if (!ignore) setItems(data ?? []);
       } finally {
         if (!ignore) setLoading(false);
@@ -28,10 +30,11 @@ export default function StudentBoard() {
     return () => {
       ignore = true;
     };
-  }, [courseId]);
+  }, [courseId, token]); // ← Add token to dependencies
 
   const existingTexts = useMemo(() => items.map((i) => i.text), [items]);
 
+  // Filter, sort, search logic (keep this same)
   const filtered = useMemo(() => {
     let list = items;
     if (filter !== "all") {
@@ -64,7 +67,7 @@ export default function StudentBoard() {
       _id: `tmp-${Date.now()}`,
       text,
       author,
-      courseId, // 👈 store courseId with question
+      courseId,
       status: "unanswered",
       createdAt: new Date().toISOString(),
     };
@@ -72,7 +75,8 @@ export default function StudentBoard() {
     setItems((prev) => [optimistic, ...prev]);
 
     try {
-      const saved = await qApi.create({ text, author, courseId }); //  pass courseId
+      // PASS THE TOKEN when creating question
+      const saved = await qApi.create({ text, author, courseId }, token);
       setItems((prev) => [
         saved,
         ...prev.filter((x) => x._id !== optimistic._id),

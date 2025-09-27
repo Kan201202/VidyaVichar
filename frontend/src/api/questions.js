@@ -2,11 +2,11 @@ import { request } from "./client.js";
 
 export const list = (params = {}, token) => {
   const q = new URLSearchParams(params).toString();
-  return request(`/questions${q ? `?${q}` : ""}`, { token });
+  return request(`/questions${q ? `?${q}` : ""}`, { token }); // ← token should be passed
 };
 
 export const create = (data, token) =>
-  request("/questions", { method: "POST", body: data, token });
+  request("/questions", { method: "POST", body: data, token }); // ← token should be passed
 
 export const update = (id, patch, token) =>
   request(`/questions/${id}`, { method: "PATCH", body: patch, token });
