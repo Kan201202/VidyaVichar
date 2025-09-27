@@ -10,7 +10,6 @@ export async function request(path, { method = "GET", token, body } = {}) {
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  // Try to parse JSON, but guard against non-JSON
   const text = await res.text();
   const json = text ? JSON.parse(text) : null;
 

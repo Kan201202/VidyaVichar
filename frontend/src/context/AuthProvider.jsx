@@ -31,13 +31,16 @@ export function AuthProvider({ children }) {
     const { token: t, user: u } = await authApi.login(email, password);
     storage.set(t); setToken(t); setUser(u);
   };
+  
   const signup = async (name, email, password) => {
     const { token: t, user: u } = await authApi.signup(name, email, password);
     storage.set(t); setToken(t); setUser(u);
   };
+  
   const logout = () => { storage.clear(); setToken(null); setUser(null); };
 
   const value = useMemo(() => ({ token, user, loading, login, signup, logout }), [token, user, loading]);
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }
+
 export const useAuth = () => useContext(AuthCtx);
