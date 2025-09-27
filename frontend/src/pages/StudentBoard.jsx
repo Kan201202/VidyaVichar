@@ -120,19 +120,23 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider.jsx";
 import QuestionComposer from "../components/QuestionComposer.jsx";
+import QuestionCard from "../components/QuestionCard.jsx";
 import Toolbar from "../components/Toolbar.jsx";
 import * as qApi from "../api/questions.js";
+import useSocket from "../hooks/useSocket.js";
 
 export default function StudentBoard() {
   const { courseId } = useParams();
-  const { token } = useAuth(); // ← Get the token from auth context
+  const { token } = useAuth();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState("newest");
   const [query, setQuery] = useState("");
 
-  // Load questions for this course - PASS THE TOKEN
+  const { connected, joinCourse, on } = useSocket(token);
+
+  // load initial
   useEffect(() => {
     let ignore = false;
     (async () => {
@@ -140,20 +144,41 @@ export default function StudentBoard() {
         setLoading(true);
         const data = await qApi.list({ courseId }, token);
         if (!ignore) setItems(data ?? []);
-      } catch (err) {
-        console.error("Failed to load questions:", err);
       } finally {
         if (!ignore) setLoading(false);
       }
     })();
-    return () => {
-      ignore = true;
+    return () => { ignore = true; };
+  }, [courseId, token]);
+
+  // join + subscribe
+  useEffect(() => {
+    if (!courseId) return;
+    joinCourse(courseId);
+
+    const upsert = (q) => {
+      setItems((prev) => {
+        const tmpIdx = prev.findIndex(x => String(x._id).startsWith("tmp-") && x.text === q.text);
+        if (tmpIdx !== -1) { const next = [...prev]; next[tmpIdx] = q; return next; }
+        const i = prev.findIndex(x => x._id === q._id);
+        if (i === -1) return [q, ...prev];
+        const next = [...prev]; next[i] = q; return next;
+      });
     };
-  }, [courseId, token]); // ← Add token to dependencies
+    const removeById = (id) => setItems((prev) => prev.filter((x) => x._id !== id));
+
+    const off1 = on("question:created", (q) => { if (q.courseId === courseId) upsert(q); });
+    const off2 = on("question:updated", (q) => { if (q.courseId === courseId) upsert(q); });
+    const off3 = on("question:deleted", ({ id }) => removeById(id));
+    const off4 = on("questions:cleared", ({ scope }) => {
+      setItems((prev) => scope === "answered" ? prev.filter(q => q.status !== "answered") : []);
+    });
+
+    return () => { off1?.(); off2?.(); off3?.(); off4?.(); };
+  }, [courseId, on, joinCourse]);
 
   const existingTexts = useMemo(() => items.map((i) => i.text), [items]);
 
-  // Filter, sort, search logic (keep this same)
   const filtered = useMemo(() => {
     let list = items;
     if (filter !== "all") {
@@ -168,15 +193,7 @@ export default function StudentBoard() {
     return list;
   }, [items, filter, sort, query]);
 
-  // =============================
-  // Handle new question
-  // =============================
   const handleSubmit = async ({ text, author }) => {
-    if (!session) {
-      alert("You can only ask questions during an active session!");
-      return;
-    }
-
     const optimistic = {
       _id: `tmp-${Date.now()}`,
       text, author, courseId,
@@ -197,34 +214,19 @@ export default function StudentBoard() {
     }
   };
 
-  // =============================
-  // Render
-  // =============================
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold mb-4">
-        Question Board - {courseId.toUpperCase()}
-      </h1>
+      <h1 className="text-2xl font-bold mb-1">Question Board - {courseId.toUpperCase()}</h1>
+      <div className="text-xs opacity-60">{connected ? "Live connected" : "Live connecting..."}</div>
+
       <QuestionComposer onSubmit={handleSubmit} existingTexts={existingTexts} />
-      <Toolbar
-        filter={filter}
-        setFilter={setFilter}
-        sort={sort}
-        setSort={setSort}
-        query={query}
-        setQuery={setQuery}
-      />
-      {loading ? (
-        <div>Loading…</div>
-      ) : filtered.length === 0 ? (
-        <div className="text-gray-600">No questions yet for this course.</div>
-      ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-          {filtered.map((q) => (
-            <QuestionCard key={q._id} q={q} />
-          ))}
-        </div>
-      )}
+      <Toolbar filter={filter} setFilter={setFilter} sort={sort} setSort={setSort} query={query} setQuery={setQuery} />
+
+      {loading ? <div>Loading…</div>
+       : filtered.length === 0 ? <div className="text-gray-600">No questions yet.</div>
+       : <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+           {filtered.map((q) => <QuestionCard key={q._id} q={q} />)}
+         </div>}
     </div>
   );
 }
