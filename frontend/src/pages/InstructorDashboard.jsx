@@ -1,22 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom"; //  for reading courseId
+import { useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider.jsx";
 import Toolbar from "../components/Toolbar.jsx";
-import QuestionCard from "../components/QuestionCard.jsx";
 import * as qApi from "../api/questions.js";
+import { CheckCircle, Trash2, Pin, MessageSquare } from "lucide-react";
 
 export default function InstructorDashboard() {
   const { token } = useAuth();
-  const { courseId } = useParams(); // read courseId from URL
+  const { courseId } = useParams();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState("newest");
   const [query, setQuery] = useState("");
+  const [answerModal, setAnswerModal] = useState({
+    open: false,
+    qId: null,
+    text: "",
+  });
 
-  // Load questions for this course
+  // Load questions
   const load = async () => {
-    const data = await qApi.list({courseId}, token); //  pass courseId
+    const data = await qApi.list({ courseId }, token);
     setItems(data ?? []);
   };
 
@@ -31,118 +36,140 @@ export default function InstructorDashboard() {
     })();
   }, [courseId]);
 
-  // Filter, sort, search logic
-  const filtered = useMemo(() => {
-    let list = items;
-    if (filter !== "all") {
-      list = list.filter((i) =>
-        filter === "unanswered"
-          ? (i.status ?? "unanswered") === "unanswered"
-          : i.status === filter
-      );
+  // Answer save
+  const submitAnswer = async () => {
+    if (!answerModal.text.trim()) {
+      alert("Answer cannot be empty!");
+      return;
     }
-    if (query) {
-      list = list.filter((i) =>
-        i.text.toLowerCase().includes(query.toLowerCase())
+    try {
+      await qApi.update(
+        answerModal.qId,
+        { answer: answerModal.text, status: "answered", courseId },
+        token
       );
+      setAnswerModal({ open: false, qId: null, text: "" });
+      await load();
+    } catch (e) {
+      alert("Failed to save answer: " + e.message);
     }
-    if (sort === "newest")
-      list = [...list].sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-      );
-    if (sort === "oldest")
-      list = [...list].sort(
-        (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
-      );
-    if (sort === "pinned")
-      list = [...list].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
-    return list;
-  }, [items, filter, sort, query]);
+  };
 
-  // Question moderation
+  // Moderation actions
   const toggleStatus = async (q, status) => {
     const next = q.status === status ? "unanswered" : status;
-    const prev = items;
-    setItems((prev) =>
-      prev.map((i) => (i._id === q._id ? { ...i, status: next } : i))
-    );
-    try {
-      await qApi.update(q._id, { status: next, courseId }, token);
-    } catch (e) {
-      setItems(prev);
-      alert("Failed: " + e.message);
-    }
+    await qApi.update(q._id, { status: next, courseId }, token);
+    await load();
   };
 
   const togglePin = async (q) => {
     const next = !q.pinned;
-    const prev = items;
-    setItems((prev) =>
-      prev.map((i) => (i._id === q._id ? { ...i, pinned: next } : i))
-    );
-    try {
-      await qApi.update(q._id, { pinned: next, courseId }, token);
-    } catch (e) {
-      setItems(prev);
-      alert("Failed: " + e.message);
-    }
-  };
-
-  const del = async (q) => {
-    const prev = items;
-    setItems((prev) => prev.filter((i) => i._id !== q._id));
-    try {
-      await qApi.remove(q._id, token);
-    } catch (e) {
-      setItems(prev);
-      alert("Failed: " + e.message);
-    }
-  };
-
-  const clearAnswered = async () => {
-    if (!confirm("Clear all answered questions?")) return;
-    await qApi.clear("answered", token, courseId);
+    await qApi.update(q._id, { pinned: next, courseId }, token);
     await load();
   };
 
-  const clearAll = async () => {
-    if (!confirm("Clear ALL questions? This cannot be undone.")) return;
-    await qApi.clear("all", token, courseId);
+  const del = async (q) => {
+    if (!confirm("Delete this question?")) return;
+    await qApi.remove(q._id, token);
     await load();
   };
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold mb-4">
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">
         Instructor Dashboard - {courseId.toUpperCase()}
       </h1>
-      <Toolbar
-        filter={filter}
-        setFilter={setFilter}
-        sort={sort}
-        setSort={setSort}
-        query={query}
-        setQuery={setQuery}
-        onClearAnswered={clearAnswered}
-        onClearAll={clearAll}
-        showDanger
-      />
+
+      {/* Question Grid */}
       {loading ? (
         <div>Loading…</div>
-      ) : filtered.length === 0 ? (
-        <div className="text-gray-600">No questions for this course.</div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-          {filtered.map((q) => (
-            <QuestionCard
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {items.map((q) => (
+            <div
               key={q._id}
-              q={q}
-              canModerate
-              onToggleStatus={toggleStatus}
-              onPin={togglePin}
-              onDelete={del}
-            />
+              className={`p-4 rounded-xl shadow-md ${
+                q.pinned ? "bg-yellow-100 border-yellow-400" : "bg-pink-100"
+              }`}
+            >
+              <p className="font-medium text-gray-800">{q.text}</p>
+              <p className="text-xs text-gray-500 mb-2">
+                Asked by: {q.studentId?.name || "Anonymous"}
+              </p>
+
+              {q.answer && (
+                <div className="bg-green-100 p-2 rounded text-sm text-gray-700 mb-2">
+                  <strong>Answer:</strong> {q.answer}
+                </div>
+              )}
+
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() =>
+                    setAnswerModal({
+                      open: true,
+                      qId: q._id,
+                      text: q.answer || "",
+                    })
+                  }
+                  className="flex items-center gap-1 px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                >
+                  <MessageSquare size={14} /> Answer
+                </button>
+                <button
+                  onClick={() => toggleStatus(q, "answered")}
+                  className="px-2 py-1 bg-green-500 text-white rounded text-sm"
+                >
+                  <CheckCircle size={14} />
+                </button>
+                <button
+                  onClick={() => togglePin(q)}
+                  className="px-2 py-1 bg-yellow-500 text-white rounded text-sm"
+                >
+                  <Pin size={14} />
+                </button>
+                <button
+                  onClick={() => del(q)}
+                  className="px-2 py-1 bg-red-500 text-white rounded text-sm"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </div>
           ))}
+        </div>
+      )}
+
+      {/* Answer Modal */}
+      {answerModal.open && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg p-6 w-96">
+            <h2 className="text-lg font-bold mb-3">Provide Answer</h2>
+            <textarea
+              className="w-full border p-2 rounded"
+              rows={4}
+              value={answerModal.text}
+              onChange={(e) =>
+                setAnswerModal({ ...answerModal, text: e.target.value })
+              }
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() =>
+                  setAnswerModal({ open: false, qId: null, text: "" })
+                }
+                className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitAnswer}
+                className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Save Answer
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -1,28 +1,58 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { useAuth } from "../context/AuthProvider.jsx"; // ← Make sure this import exists
+import { useAuth } from "../context/AuthProvider.jsx";
 import QuestionComposer from "../components/QuestionComposer.jsx";
-import QuestionCard from "../components/QuestionCard.jsx";
 import Toolbar from "../components/Toolbar.jsx";
 import * as qApi from "../api/questions.js";
+import { getActiveSession } from "../api/sessions.js";
 
 export default function StudentBoard() {
   const { courseId } = useParams();
-  const { token } = useAuth(); // ← Get the token from auth context
+  const { token } = useAuth();
+
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState("newest");
   const [query, setQuery] = useState("");
 
-  // Load questions for this course - PASS THE TOKEN
+  const [session, setSession] = useState(null); // Active session info
+  const [sessionLoading, setSessionLoading] = useState(true);
+
+  // =============================
+  // Fetch active session for this course
+  // =============================
+  useEffect(() => {
+    let ignore = false;
+    (async () => {
+      try {
+        setSessionLoading(true);
+        const activeSession = await getActiveSession(courseId, token);
+        if (!ignore) setSession(activeSession);
+      } catch (err) {
+        console.error("Failed to fetch active session:", err);
+        if (!ignore) setSession(null);
+      } finally {
+        if (!ignore) setSessionLoading(false);
+      }
+    })();
+    return () => {
+      ignore = true;
+    };
+  }, [courseId, token]);
+
+  // =============================
+  // Fetch questions for this course
+  // =============================
   useEffect(() => {
     let ignore = false;
     (async () => {
       try {
         setLoading(true);
-        const data = await qApi.list({ courseId }, token); // ← Pass token here
+        const data = await qApi.list({ courseId }, token);
         if (!ignore) setItems(data ?? []);
+      } catch (err) {
+        console.error("Failed to load questions:", err);
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -30,11 +60,13 @@ export default function StudentBoard() {
     return () => {
       ignore = true;
     };
-  }, [courseId, token]); // ← Add token to dependencies
+  }, [courseId, token]);
 
   const existingTexts = useMemo(() => items.map((i) => i.text), [items]);
 
-  // Filter, sort, search logic (keep this same)
+  // =============================
+  // Filter, sort, and search
+  // =============================
   const filtered = useMemo(() => {
     let list = items;
     if (filter !== "all") {
@@ -62,7 +94,15 @@ export default function StudentBoard() {
     return list;
   }, [items, filter, sort, query]);
 
+  // =============================
+  // Handle new question
+  // =============================
   const handleSubmit = async ({ text, author }) => {
+    if (!session) {
+      alert("You can only ask questions during an active session!");
+      return;
+    }
+
     const optimistic = {
       _id: `tmp-${Date.now()}`,
       text,
@@ -75,7 +115,6 @@ export default function StudentBoard() {
     setItems((prev) => [optimistic, ...prev]);
 
     try {
-      // PASS THE TOKEN when creating question
       const saved = await qApi.create({ text, author, courseId }, token);
       setItems((prev) => [
         saved,
@@ -87,12 +126,39 @@ export default function StudentBoard() {
     }
   };
 
+  // =============================
+  // Render
+  // =============================
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold mb-4">
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold mb-4">
         Question Board - {courseId.toUpperCase()}
       </h1>
-      <QuestionComposer onSubmit={handleSubmit} existingTexts={existingTexts} />
+
+      {/* Session status */}
+      {sessionLoading ? (
+        <div className="p-4 text-gray-500">Checking session status...</div>
+      ) : session ? (
+        <div className="p-4 bg-green-100 text-green-800 rounded">
+          Active session in progress:{" "}
+          <strong>{session.title || "Lecture in Progress"}</strong>
+        </div>
+      ) : (
+        <div className="p-4 bg-red-100 text-red-800 rounded">
+          No active session right now. You can't ask questions until the
+          instructor starts one.
+        </div>
+      )}
+
+      {/* Only show composer if session is active */}
+      {session && (
+        <QuestionComposer
+          onSubmit={handleSubmit}
+          existingTexts={existingTexts}
+        />
+      )}
+
+      {/* Toolbar */}
       <Toolbar
         filter={filter}
         setFilter={setFilter}
@@ -101,14 +167,46 @@ export default function StudentBoard() {
         query={query}
         setQuery={setQuery}
       />
+
+      {/* Questions grid */}
       {loading ? (
-        <div>Loading…</div>
+        <div className="text-gray-500">Loading questions...</div>
       ) : filtered.length === 0 ? (
         <div className="text-gray-600">No questions yet for this course.</div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {filtered.map((q) => (
-            <QuestionCard key={q._id} q={q} />
+            <div
+              key={q._id}
+              className={`p-4 rounded-xl shadow-md transition transform hover:scale-[1.02] 
+                ${q.pinned ? "bg-yellow-100 border-yellow-400" : "bg-blue-50"}`}
+            >
+              {/* Question text */}
+              <p className="text-gray-800 font-medium mb-2">{q.text}</p>
+              <p className="text-xs text-gray-500">
+                Asked by: {q.studentId?.name || "Anonymous"}
+              </p>
+
+              {/* Instructor answer */}
+              {q.answer && (
+                <div className="mt-3 bg-green-100 p-2 rounded text-sm text-gray-700">
+                  <strong>Instructor Answer:</strong> {q.answer}
+                </div>
+              )}
+
+              {/* Status badge */}
+              <div className="mt-2">
+                <span
+                  className={`text-xs font-semibold px-2 py-1 rounded ${
+                    q.status === "answered"
+                      ? "bg-green-200 text-green-800"
+                      : "bg-red-200 text-red-800"
+                  }`}
+                >
+                  {q.status === "answered" ? "Answered" : "Unanswered"}
+                </span>
+              </div>
+            </div>
           ))}
         </div>
       )}
