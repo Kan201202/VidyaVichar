@@ -8,6 +8,8 @@ import InstructorLanding from "./pages/InstructorLanding.jsx";
 import History from "./pages/History.jsx";
 import AuthGuard from "./components/AuthGuard.jsx";
 import Navbar from "./components/Navbar.jsx";
+import CourseCreation from "./pages/CourseCreation.jsx";
+import CourseBrowser from "./pages/CourseBrowser.jsx"; // You'll create this next
 import { useAuth } from "./context/AuthProvider.jsx";
 
 function RoleBasedLanding() {
@@ -53,6 +55,18 @@ export default function App() {
           <Route path="/instructor-dashboard/:courseId" element={
             <AuthGuard>
               <InstructorDashboard />
+            </AuthGuard>
+          } />
+          
+          {/* Course Management Routes (protected) */}
+          <Route path="/create-course" element={
+            <AuthGuard>
+              <CourseCreation />
+            </AuthGuard>
+          } />
+          <Route path="/browse-courses" element={
+            <AuthGuard>
+              <CourseBrowser />
             </AuthGuard>
           } />
           

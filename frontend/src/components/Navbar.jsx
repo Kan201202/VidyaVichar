@@ -13,16 +13,30 @@ export default function Navbar() {
           {/* Show navigation only when logged in */}
           {token && (
             <>
+              {/* Role-specific main navigation */}
               {user?.role === 'student' && (
                 <Link to="/student-landing" className={linkCls(pathname === '/student-landing')}>
-                  Board
+                  My Courses
                 </Link>
               )}
               {user?.role === 'instructor' && (
                 <Link to="/instructor-landing" className={linkCls(pathname === '/instructor-landing')}>
-                  Dashboard
+                  My Courses
                 </Link>
               )}
+              
+              {/* Course management links */}
+              {user?.role === 'instructor' && (
+                <Link to="/create-course" className={linkCls(pathname === '/create-course')}>
+                  Create Course
+                </Link>
+              )}
+              {user?.role === 'student' && (
+                <Link to="/browse-courses" className={linkCls(pathname === '/browse-courses')}>
+                  Browse Courses
+                </Link>
+              )}
+              
               <Link to="/history" className={linkCls(pathname === '/history')}>History</Link>
             </>
           )}
