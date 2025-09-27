@@ -2,6 +2,18 @@ import { Link, useLocation } from "react-router-dom";
 import { supabase } from "../api/supabase.js";
 import { useAuth } from "../context/AuthProvider.jsx";
 
+// ADD THIS COMPONENT INSIDE THE SAME FILE
+function Nav({ to, active, children }) {
+  return (
+    <Link
+      to={to}
+      className={`px-2 py-1 rounded ${active ? "font-semibold underline" : "text-gray-600 hover:underline"}`}
+    >
+      {children}
+    </Link>
+  );
+}
+
 export default function Navbar() {
   const { pathname } = useLocation();
   const { user, role } = useAuth();
@@ -17,8 +29,17 @@ export default function Navbar() {
         <Link to="/" className="text-lg font-semibold">VidyaVichara</Link>
         <div className="flex items-center gap-3">
           <Nav to="/" active={pathname === "/"}>Home</Nav>
-          <Nav to="/board" active={pathname === "/board"}>Board</Nav>
-          <Nav to="/dashboard" active={pathname === "/dashboard"}>Dashboard</Nav>
+          
+          {/* SHOW BOARD ONLY TO STUDENTS */}
+          {(!user || role === 'student') && (
+            <Nav to="/board" active={pathname === "/board"}>Board</Nav>
+          )}
+          
+          {/* SHOW DASHBOARD ONLY TO INSTRUCTORS */}
+          {role === 'instructor' && (
+            <Nav to="/dashboard" active={pathname === "/dashboard"}>Dashboard</Nav>
+          )}
+          
           <Nav to="/history" active={pathname === "/history"}>History</Nav>
 
           {!user ? (
@@ -37,16 +58,5 @@ export default function Navbar() {
         </div>
       </nav>
     </header>
-  );
-}
-
-function Nav({ to, active, children }) {
-  return (
-    <Link
-      to={to}
-      className={`px-2 py-1 rounded ${active ? "font-semibold underline" : "text-gray-600 hover:underline"}`}
-    >
-      {children}
-    </Link>
   );
 }
