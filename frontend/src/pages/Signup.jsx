@@ -19,7 +19,7 @@ export default function Signup() {
     try {
       setBusy(true);
       await signup(name, email, password);
-      nav("/instructor", { replace: true });
+      nav("/", { replace: true }); // Changed from "/instructor" to "/"
     } catch (e) { setError(e.message); }
     finally { setBusy(false); }
   };

@@ -9,22 +9,34 @@ import History from "./pages/History.jsx";
 import AuthGuard from "./components/AuthGuard.jsx";
 import Navbar from "./components/Navbar.jsx";
 import CourseCreation from "./pages/CourseCreation.jsx";
-import CourseBrowser from "./pages/CourseBrowser.jsx"; // You'll create this next
+import CourseBrowser from "./pages/CourseBrowser.jsx";
 import { useAuth } from "./context/AuthProvider.jsx";
 
 function RoleBasedLanding() {
-  const { user, token } = useAuth();
+  const { user, token, loading } = useAuth();
   
+  if (loading) return <div className="p-6 text-center">Loading...</div>;
   if (!token) return <Navigate to="/login" replace />;
-  if (user?.role === 'instructor') return <Navigate to="/instructor-landing" replace />;
-  return <Navigate to="/student-landing" replace />;
+  if (!user) return <div className="p-6 text-center">Loading user data...</div>;
+  
+  if (user.role === 'instructor') {
+    return <Navigate to="/instructor-landing" replace />;
+  }
+  if (user.role === 'student') {
+    return <Navigate to="/student-landing" replace />;
+  }
+  
+  return <div className="p-6 text-center">Unknown user role: {user.role}</div>;
 }
 
 export default function App() {
+  const { user } = useAuth();
+  
   return (
     <div className="min-h-dvh bg-gray-50 text-gray-900">
       <Navbar />
-      <main className="mx-auto w-full max-w-6xl p-4">
+      {/* Add key to force re-render when user changes */}
+      <main key={user?.id} className="mx-auto w-full max-w-6xl p-4">
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
@@ -37,7 +49,7 @@ export default function App() {
           {/* Student Flow (protected) */}
           <Route path="/student-landing" element={
             <AuthGuard>
-              <StudentLanding />
+              <StudentLanding key={`student-${user?.id}`} />
             </AuthGuard>
           } />
           <Route path="/student-board/:courseId" element={
@@ -49,7 +61,7 @@ export default function App() {
           {/* Instructor Flow (protected) */}
           <Route path="/instructor-landing" element={
             <AuthGuard>
-              <InstructorLanding />
+              <InstructorLanding key={`instructor-${user?.id}`} />
             </AuthGuard>
           } />
           <Route path="/instructor-dashboard/:courseId" element={
@@ -79,9 +91,7 @@ export default function App() {
           
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
-          <Route path="/course/:courseId/student" element={<StudentBoard/>} />
-  <Route path="/course/:courseId/instructor" element={<InstructorDashboard/>} />
-</Routes>
+        </Routes>
       </main>
     </div>
   );

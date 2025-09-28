@@ -8,19 +8,36 @@ export default function useSocket(authToken) {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
+    // Close existing connection if token changes
+    if (sockRef.current) {
+      sockRef.current.close();
+    }
+
+    if (!authToken) {
+      setConnected(false);
+      return;
+    }
+
     const s = io(IO_URL, {
       autoConnect: true,
       transports: ["websocket"],
-      // auth: { token: authToken }, // enable if you protected handshake
+      auth: { token: authToken }, // Add token to handshake
       withCredentials: true,
     });
+    
     sockRef.current = s;
     const onConnect = () => setConnected(true);
     const onDisconnect = () => setConnected(false);
+    
     s.on("connect", onConnect);
     s.on("disconnect", onDisconnect);
-    return () => { s.off("connect", onConnect); s.off("disconnect", onDisconnect); s.close(); };
-  }, [authToken]);
+    
+    return () => { 
+      s.off("connect", onConnect); 
+      s.off("disconnect", onDisconnect); 
+      s.close(); 
+    };
+  }, [authToken]); // Reconnect when authToken changes
 
   const on = useCallback((event, handler) => {
     sockRef.current?.on(event, handler);

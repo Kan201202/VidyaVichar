@@ -15,7 +15,7 @@ export default function Login() {
     e.preventDefault(); setError(""); setBusy(true);
     try {
       await login(email, password);
-      const to = loc.state?.from?.pathname || "/instructor";
+      const to = loc.state?.from?.pathname || "/"; // Changed from "/instructor" to "/"
       nav(to, { replace: true });
     } catch (e) { setError(e.message); }
     finally { setBusy(false); }
