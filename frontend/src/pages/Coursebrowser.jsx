@@ -57,7 +57,7 @@ export default function CourseBrowser() {
   return (
     <div className="mx-auto mt-8 max-w-4xl p-6 rounded-xl shadow-md bg-white">
       <h1 className="text-2xl font-bold mb-6">Browse Available Courses</h1>
-      
+
       {courses.length === 0 ? (
         <div className="text-center p-8 text-gray-500">
           No available courses found. You may already be enrolled in all courses.
@@ -69,7 +69,7 @@ export default function CourseBrowser() {
       ) : (
         <div className="grid grid-cols-1 gap-6">
           {courses.map((course) => (
-            <div key={course._id} className="p-6 rounded-xl border shadow hover:shadow-lg transition bg-white">
+            <div key={course._id} className="p-6 rounded-xl border shadow hover:shadow-lg transition bg-blue-50 hover:bg-green-100">
               <div className="flex justify-between items-start">
                 <div>
                   <h2 className="text-lg font-semibold">{course.name}</h2>
@@ -84,7 +84,7 @@ export default function CourseBrowser() {
                 <button
                   onClick={() => handleEnroll(course._id)}
                   disabled={enrolling[course._id]}
-                  className="bg-green-600 text-white px-4 py-2 rounded disabled:opacity-50"
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {enrolling[course._id] ? "Enrolling..." : "Enroll"}
                 </button>
