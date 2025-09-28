@@ -8,11 +8,18 @@ export default function Navbar() {
   return (
     <header className="border-b border-slate-200 bg-white/90 backdrop-blur">
       <nav className="vv-container flex items-center justify-between p-4">
-        <Link to="/" className="text-lg font-semibold tracking-wide text-slate-900">VidyaVichara</Link>
+        <Link to="/" className="text-lg font-semibold tracking-wide text-slate-900">
+          VidyaVichara
+        </Link>
         <div className="flex items-center gap-3">
           {/* Show navigation only when logged in */}
-          {token && (
+          {token ? (
             <>
+              {/* Always show Home link */}
+              <Link to="/" className={linkCls(pathname === '/')}>
+                Home
+              </Link>
+              
               {/* Role-specific main navigation */}
               {user?.role === 'student' && (
                 <Link to="/student-landing" className={linkCls(pathname === '/student-landing')}>
@@ -37,19 +44,27 @@ export default function Navbar() {
                 </Link>
               )}
               
-              <Link to="/history" className={linkCls(pathname === '/history')}>History</Link>
-            </>
-          )}
-          
-          {!token ? (
-            <>
-              <Link to="/login" className="vv-btn vv-btn-primary">Login</Link>
-              <Link to="/signup" className="vv-btn">Signup</Link>
+              <Link to="/history" className={linkCls(pathname === '/history')}>
+                History
+              </Link>
+              
+              <button onClick={logout} className="vv-btn">
+                Logout {user?.name ? `(${user.name})` : ""}
+              </button>
             </>
           ) : (
-            <button onClick={logout} className="vv-btn">
-              Logout {user?.name ? `(${user.name})` : ""}
-            </button>
+            <>
+              {/* Show when not logged in */}
+              <Link to="/" className={linkCls(pathname === '/')}>
+                Home
+              </Link>
+              <Link to="/login" className="vv-btn vv-btn-primary">
+                Login
+              </Link>
+              <Link to="/signup" className="vv-btn">
+                Signup
+              </Link>
+            </>
           )}
         </div>
       </nav>
