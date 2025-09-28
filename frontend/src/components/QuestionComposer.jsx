@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 
-export default function QuestionComposer({ onSubmit, existingTexts = [] }) {
+export default function QuestionComposer({ onSubmit, existingTexts = [], disabled = false }) {
   const [text, setText] = useState("");
   const [author, setAuthor] = useState("");
   const limit = 300;
@@ -14,40 +14,42 @@ export default function QuestionComposer({ onSubmit, existingTexts = [] }) {
     return normalized.length > 0 && set.has(normalized);
   }, [existingTexts, normalized]);
 
-  const disabled = !normalized || normalized.length > limit || isDuplicate;
+  const remaining = limit - text.length;
+  const over = remaining < 0;
 
   const submit = (e) => {
     e.preventDefault();
     if (disabled) return;
-    onSubmit({ text: text.trim(), author: author.trim() || "Anonymous" });
+    if (over || isDuplicate || !text.trim()) return;
+    onSubmit({ text: text.trim(), author: author.trim() || undefined });
     setText("");
   };
 
   return (
-    <form onSubmit={submit} className="rounded-lg border bg-white p-4 shadow-sm">
+    <form onSubmit={submit} className="rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur p-4 shadow-sm">
       <label className="mb-2 block text-sm font-medium">Ask your question</label>
+
       <textarea
-        className="h-24 w-full resize-none rounded border p-2"
+        disabled={disabled}
+        className="rounded-xl border border-slate-200 w-full p-3 shadow-sm bg-white/90 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:opacity-60 disabled:cursor-not-allowed h-24 resize-none"
         value={text}
-        onChange={e => setText(e.target.value)}
+        onChange={(e) => setText(e.target.value)}
         placeholder="Type your question…"
-      />
+      ></textarea>
+
       <div className="mt-2 flex items-center justify-between text-sm">
         <input
-          className="w-56 rounded border p-2"
           value={author}
-          onChange={e => setAuthor(e.target.value)}
+          onChange={(e) => setAuthor(e.target.value)}
+          className="rounded-lg border border-slate-200 px-3 py-2 shadow-sm"
           placeholder="Your name (optional)"
+          disabled={disabled}
         />
+
         <div className="flex items-center gap-3">
-          <span className={text.length>limit ? "text-red-600" : ""}>
-            {text.length}/{limit}
-          </span>
-          {isDuplicate && <span className="text-red-600">Duplicate question</span>}
-          <button
-            disabled={disabled}
-            className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
-          >
+          {isDuplicate && <div className="vv-hint text-red-600">This looks like a duplicate.</div>}
+          <div className={`vv-hint ${over ? 'text-red-600' : 'text-slate-500'}`}>{remaining}</div>
+          <button disabled={disabled || over || isDuplicate || !text.trim()} className="vv-btn">
             Submit
           </button>
         </div>

@@ -6,9 +6,9 @@ export default function Navbar() {
   const { pathname } = useLocation();
   
   return (
-    <header className="border-b bg-white">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between p-4">
-        <Link to="/" className="text-lg font-semibold">VidyaVichara</Link>
+    <header className="border-b border-slate-200 bg-white/90 backdrop-blur">
+      <nav className="vv-container flex items-center justify-between p-4">
+        <Link to="/" className="text-lg font-semibold tracking-wide text-slate-900">VidyaVichara</Link>
         <div className="flex items-center gap-3">
           {/* Show navigation only when logged in */}
           {token && (
@@ -43,11 +43,11 @@ export default function Navbar() {
           
           {!token ? (
             <>
-              <Link to="/login" className="rounded bg-gray-900 px-3 py-1 text-white">Login</Link>
-              <Link to="/signup" className="rounded border px-3 py-1">Signup</Link>
+              <Link to="/login" className="vv-btn vv-btn-primary">Login</Link>
+              <Link to="/signup" className="vv-btn">Signup</Link>
             </>
           ) : (
-            <button onClick={logout} className="rounded border px-3 py-1">
+            <button onClick={logout} className="vv-btn">
               Logout {user?.name ? `(${user.name})` : ""}
             </button>
           )}
@@ -58,5 +58,5 @@ export default function Navbar() {
 }
 
 function linkCls(active) {
-  return `px-2 py-1 ${active ? "font-semibold underline" : "text-gray-600"}`;
+  return `vv-tab ${active ? "vv-tab-active" : ""}`;
 }

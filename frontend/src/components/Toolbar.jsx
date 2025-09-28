@@ -18,17 +18,17 @@ export default function Toolbar({
           </button>
         ))}
       </div>
-      <div className="flex items-center gap-2">
-        <select className="rounded border p-2" value={sort} onChange={e=>setSort(e.target.value)}>
+      <div className="flex items-center gap-2 flex-wrap">
+        <select className="vv-input" value={sort} onChange={e=>setSort(e.target.value)}>
           <option value="newest">Newest</option>
           <option value="oldest">Oldest</option>
           <option value="pinned">Pinned first</option>
         </select>
-        <input className="w-56 rounded border p-2" placeholder="Search…" value={query} onChange={e=>setQuery(e.target.value)} />
+        <input className="w-56 vv-input" placeholder="Search…" value={query} onChange={e=>setQuery(e.target.value)} />
         {showDanger && (
           <>
-            <button className="rounded border px-3 py-1" onClick={onClearAnswered}>Clear Answered</button>
-            <button className="rounded border px-3 py-1 text-red-600" onClick={onClearAll}>Clear All</button>
+            <button className="vv-btn" onClick={onClearAnswered}>Clear Answered</button>
+            <button className="vv-btn text-red-600 border-red-200 hover:bg-red-50" onClick={onClearAll}>Clear All</button>
           </>
         )}
       </div>
