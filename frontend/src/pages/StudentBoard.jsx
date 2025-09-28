@@ -70,23 +70,101 @@ export default function StudentBoard() {
   }, [items, filter, sort, query]);
 
   return (
-    <><div className="relative -mx-4 mb-6"><div className="vv-hero"></div></div><div className="mx-auto max-w-5xl p-4">
-      <h1 className="text-3xl font-extrabold tracking-tight mb-1">Question Board</h1>
-      <div className="text-xs opacity-60">{connected ? "Live connected" : "Live connecting..."}</div>
-      <div className="mt-2 mb-4">
-        {activeSession ? <span className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs">Class is LIVE — you can submit questions</span>
-                       : <span className="px-2 py-1 rounded bg-slate-100 text-slate-700 text-xs">Class is OFF — questions disabled</span>}
+    <>
+      {/* Blue hero header card */}
+      <div className="mx-auto max-w-6xl p-4">
+        <div className="mb-4 rounded-2xl border bg-blue-600 text-white p-6 shadow-md">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                Question Board
+              </h1>
+
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-white">
+                  <span
+                    className={`inline-block h-2 w-2 rounded-full ${connected ? "bg-emerald-300 animate-pulse" : "bg-amber-300 animate-pulse"}`}
+                    aria-hidden
+                  />
+                  {connected ? "Live connected" : "Live connecting..."}
+                </span>
+
+                {activeSession ? (
+                  // 🔆 Light-green LIVE pill
+                  <span className="inline-flex items-center gap-1 rounded-full bg-green-200 text-green-800 px-3 py-1">
+                    <svg width="12" height="12" viewBox="0 0 24 24" className="fill-green-600">
+                      <circle cx="12" cy="12" r="10" />
+                    </svg>
+                    Class is LIVE
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-white">
+                    <svg width="12" height="12" viewBox="0 0 24 24" className="opacity-80"><path d="M12 2v20" /></svg>
+                    Class is OFF
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Toolbar sits inside the blue card, on white for contrast */}
+          <div className="mt-4 rounded-xl bg-white text-slate-900 shadow-sm">
+            <div className="p-4">
+              <Toolbar
+                filter={filter} setFilter={setFilter}
+                sort={sort} setSort={setSort}
+                query={query} setQuery={setQuery}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Question Composer */}
+        <div className="mb-6">
+          <QuestionComposer onSubmit={handleSubmit} existingTexts={existingTexts} disabled={!activeSession} />
+        </div>
+
+        {/* Content area */}
+        {loading ? (
+          // Skeletons
+          <div className="grid vv-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="rounded-2xl border bg-white/60 p-4 animate-pulse">
+                <div className="h-4 w-24 rounded bg-slate-200 mb-3" />
+                <div className="h-5 w-3/4 rounded bg-slate-200 mb-2" />
+                <div className="h-5 w-2/3 rounded bg-slate-200 mb-4" />
+                <div className="flex gap-2">
+                  <div className="h-8 w-20 rounded bg-slate-200" />
+                  <div className="h-8 w-16 rounded bg-slate-200" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          // Empty state
+          <div className="mx-auto max-w-xl rounded-2xl border bg-white p-10 text-center shadow-sm">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+              <svg width="22" height="22" viewBox="0 0 24 24" className="opacity-70">
+                <path d="M3 5h18v12H5l-2 2V5z" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+              </svg>
+            </div>
+            <h2 className="text-lg font-semibold">No questions yet</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              When students post, they’ll appear here instantly.
+            </p>
+          </div>
+        ) : (
+          // Grid
+          <div className="vv-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filtered.map((q) => (
+              <div key={q._id} className="group relative transition">
+                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 bg-gradient-to-br from-transparent via-transparent to-slate-200/40 pointer-events-none transition" />
+                <QuestionCard q={q} />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-
-      <QuestionComposer onSubmit={handleSubmit} existingTexts={existingTexts} disabled={!activeSession} />
-
-      <Toolbar filter={filter} setFilter={setFilter} sort={sort} setSort={setSort} query={query} setQuery={setQuery} />
-
-      {loading ? <div>Loading…</div>
-       : filtered.length === 0 ? <div className="text-gray-600">No questions yet.</div>
-       : <div className="vv-grid">
-           {filtered.map((q) => <QuestionCard key={q._id} q={q} />)}
-         </div>}
-    </div></>
+    </>
   );
 }
