@@ -1,1 +1,88 @@
 @import "tailwindcss";
+
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- App theme overrides for a professional dark UI --- */
+@layer base {
+  html, body, #root { @apply h-full; }
+  body { @apply bg-slate-950 text-slate-100 antialiased; }
+}
+
+@layer components {
+  .vv-container { @apply mx-auto max-w-6xl px-4; }
+  .vv-panel { @apply rounded-2xl border border-white/10 bg-slate-900/80 shadow-xl backdrop-blur; }
+  .vv-card { @apply rounded-2xl border border-white/10 bg-slate-900/80 p-4 shadow-lg; }
+  .vv-btn { @apply inline-flex items-center gap-2 rounded-xl border border-white/10 bg-slate-800/80 px-3 py-1.5 text-sm hover:bg-slate-700/70 transition; }
+  .vv-btn-primary { @apply bg-indigo-600 text-white border-transparent hover:bg-indigo-500; }
+  .vv-badge { @apply inline-flex items-center rounded-full border border-white/10 px-2 py-0.5 text-xs text-slate-300; }
+  .vv-input { @apply w-full rounded-xl border border-white/10 bg-slate-900/80 px-3 py-2 outline-none focus:ring-4 focus:ring-indigo-500/30; }
+  .vv-tab { @apply rounded-full border border-white/10 px-3 py-1 text-sm text-slate-300 hover:bg-slate-800/70; }
+  .vv-tab-active { @apply bg-indigo-600 text-white border-transparent; }
+  .vv-chip { @apply rounded-full bg-slate-800/80 px-2 py-0.5 text-xs text-slate-300; }
+}
+
+/* Subtle scrollbar */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: rgba(148,163,184,.3); border-radius: 999px; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+
+/* === Clean Light Theme (accessible) === */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root { @apply h-full; }
+  body { @apply bg-slate-50 text-slate-900 antialiased; }
+}
+
+@layer components {
+  .vv-container { @apply mx-auto max-w-6xl px-4; }
+  .vv-panel { @apply rounded-2xl border border-slate-200 bg-white shadow-lg; }
+  .vv-card  { @apply rounded-2xl border border-slate-200 bg-white shadow-md p-4; }
+  .vv-btn   { @apply inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 transition; }
+  .vv-btn-primary { @apply bg-indigo-600 text-white border-transparent hover:bg-indigo-500; }
+  .vv-badge { @apply inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs text-slate-600; }
+  .vv-input { @apply w-full rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none focus:ring-4 focus:ring-indigo-500/20; }
+  .vv-tab { @apply rounded-full border border-slate-200 px-3 py-1 text-sm text-slate-600 hover:bg-slate-100; }
+  .vv-tab-active { @apply bg-indigo-600 text-white border-transparent; }
+  .vv-chip { @apply rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600; }
+}
+
+/* Stabilize card layout */
+.vv-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 160px;
+}
+.vv-card .vv-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.vv-card .vv-meta { display: flex; align-items: center; justify-content: space-between; color: rgb(100,116,139); font-size: 0.875rem; }
+.vv-card .vv-title { line-height: 1.6; }
+
+/* Prevent layout shift on hover/focus */
+.vv-btn, .vv-btn-primary { border-width: 1px; }
+.vv-btn:focus, .vv-btn-primary:focus { outline: none; box-shadow: 0 0 0 3px rgba(79,70,229,.25); }
+
+/* Scrollbar */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: rgba(100,116,139,.35); border-radius: 999px; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+
+/* Polished interactions */
+.vv-card { transition: transform .08s ease, box-shadow .2s ease; }
+.vv-card:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(2,6,23,.08); }
+.vv-tab-active { box-shadow: 0 0 0 2px rgba(79,70,229,.2) inset; }
+.vv-btn { transition: transform .05s ease, box-shadow .15s ease; }
+.vv-btn:active { transform: translateY(1px); }
+
+
+/* Fancy card entrance */
+@keyframes vvFadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.vv-card { animation: vvFadeUp .25s ease both; }

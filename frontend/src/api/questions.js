@@ -65,3 +65,7 @@
 //   if (!r.ok) throw new Error("Failed to clear questions");
 //   return r.json();
 // }
+
+
+export const history = (token) =>
+  request("/questions/history", { token });

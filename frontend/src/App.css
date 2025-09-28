@@ -40,3 +40,30 @@
 .read-the-docs {
   color: #888;
 }
+
+
+/* Simple utility styles */
+.vv-btn { @apply px-3 py-1.5 rounded-lg shadow text-sm bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50; }
+.vv-chip { @apply text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700; }
+.vv-actions > .vv-btn { @apply mr-2 mb-2; }
+
+
+/* --- Visual Polish --- */
+.vv-hero {
+  @apply h-28 sm:h-36 bg-gradient-to-r from-indigo-500 via-sky-500 to-violet-500;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,1), rgba(0,0,0,0.2));
+}
+
+.vv-btn { @apply inline-flex items-center justify-center px-4 py-2 rounded-xl shadow text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 active:scale-[.99] transition disabled:opacity-50 disabled:cursor-not-allowed; }
+.vv-chip { @apply text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700; }
+.vv-actions > .vv-btn { @apply mr-2 mb-2; }
+
+/* Filter pills */
+.vv-pill { @apply px-3 py-1.5 rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-indigo-300 hover:text-indigo-700 transition; }
+.vv-pill.is-active { @apply bg-indigo-600 text-white border-indigo-600 shadow; }
+
+/* Cards grid spacing */
+.vv-grid { @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3; }
+
+/* Subtle hint text */
+.vv-hint { @apply text-xs opacity-80 mt-1; }

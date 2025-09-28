@@ -79,7 +79,9 @@ export default function App() {
           
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+          <Route path="/course/:courseId/student" element={<StudentBoard/>} />
+  <Route path="/course/:courseId/instructor" element={<InstructorDashboard/>} />
+</Routes>
       </main>
     </div>
   );
